@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API - Statement
+  version: 1.0.0
+  description: List user transactions (deposits, buys, sells, rebooks) with pagination and filters.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    StatementItem:
+      type: object
+      required: [id, type, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [DEPOSIT, BUY, SELL, REBOOK] }
+        createdAt: { type: string, format: date-time }
+        amountBRL: { type: number, nullable: true }
+        qtyBTC: { type: number, nullable: true }
+        quoteSide: { type: string, enum: [buy, sell], nullable: true }
+        quotePriceBRL: { type: number, nullable: true }
+        unitPriceBRL: { type: number, nullable: true }
+    StatementResponse:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/StatementItem' }
+        page:
+          type: object
+          properties:
+            nextCursor: { type: string }
+paths:
+  /statement:
+    get:
+      summary: List statement items for the authenticated user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+        - in: query
+          name: types
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items: { type: string }
+          description: Comma-separated or repeated types: DEPOSIT,BUY,SELL,REBOOK
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: Statement page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StatementResponse' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

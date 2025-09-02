@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API - Sales
+  version: 1.0.0
+  description: Endpoint to enqueue BTC sell orders using current buy price.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SellOrderAccepted:
+      type: object
+      required: [orderId, status]
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ENQUEUED]
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+paths:
+  /orders/sell:
+    post:
+      summary: Enqueue a BTC sell order by BRL amount (uses buy price)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amountBRL, clientRequestId]
+              properties:
+                amountBRL:
+                  type: number
+                  minimum: 0
+                  exclusiveMinimum: true
+                clientRequestId:
+                  type: string
+      responses:
+        '202':
+          description: Order accepted and enqueued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellOrderAccepted'
+        '200':
+          description: Idempotent accept (already enqueued)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellOrderAccepted'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid input or insufficient holdings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Quote unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

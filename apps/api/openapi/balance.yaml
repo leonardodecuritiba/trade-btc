@@ -1,0 +1,60 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API - Balance
+  version: 1.0.0
+  description: Endpoint to fetch user BRL balance.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    BalanceResponse:
+      type: object
+      required: [balanceBRL, currency, updatedAt]
+      properties:
+        balanceBRL:
+          type: number
+        currency:
+          type: string
+          enum: [BRL]
+        updatedAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+paths:
+  /balance:
+    get:
+      summary: Get BRL balance
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current BRL balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+

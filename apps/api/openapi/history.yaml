@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API - Quotes History (24h)
+  version: 1.0.0
+  description: 24h price history in 10-minute slots, preserving gaps.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    HistoryItem:
+      type: object
+      required: [ts]
+      properties:
+        ts: { type: string, format: date-time }
+        buy: { type: number, nullable: true }
+        sell: { type: number, nullable: true }
+        source: { type: string, nullable: true }
+    HistoryResponse:
+      type: object
+      required: [timezone, slots, startTs, endTs, items]
+      properties:
+        timezone: { type: string, example: 'America/Sao_Paulo' }
+        slots: { type: integer, example: 144 }
+        startTs: { type: string, format: date-time }
+        endTs: { type: string, format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/HistoryItem' }
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+paths:
+  /quotes/history:
+    get:
+      summary: 24h BTC buy/sell history in 10-minute slots
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: History series
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+

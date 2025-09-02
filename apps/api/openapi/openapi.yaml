@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API
+  version: 1.0.0
+  description: Combined OpenAPI spec for Auth (Accounts) and Deposits.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /auth/register:
+    $ref: './accounts.yaml#/paths/~1auth~1register'
+  /auth/login:
+    $ref: './accounts.yaml#/paths/~1auth~1login'
+  /deposits:
+    $ref: './deposits.yaml#/paths/~1deposits'
+  /balance:
+    $ref: './balance.yaml#/paths/~1balance'
+  /quotes/current:
+    $ref: './quotes.yaml#/paths/~1quotes~1current'
+  /orders/buy:
+    $ref: './purchases.yaml#/paths/~1orders~1buy'
+  /positions:
+    $ref: './positions.yaml#/paths/~1positions'
+  /orders/sell:
+    $ref: './sales.yaml#/paths/~1orders~1sell'
+  /statement:
+    $ref: './statement.yaml#/paths/~1statement'
+  /metrics/daily-volume:
+    $ref: './volume.yaml#/paths/~1metrics~1daily-volume'
+  /quotes/history:
+    $ref: './history.yaml#/paths/~1quotes~1history'

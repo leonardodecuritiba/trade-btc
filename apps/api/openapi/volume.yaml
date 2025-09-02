@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API - Daily Volume
+  version: 1.0.0
+  description: Total BTC bought and sold in the current day (America/Sao_Paulo).
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    DailyVolume:
+      type: object
+      required: [date, timezone, boughtBTC, soldBTC]
+      properties:
+        date: { type: string, example: '2025-09-01' }
+        timezone: { type: string, example: 'America/Sao_Paulo' }
+        boughtBTC: { type: number }
+        soldBTC: { type: number }
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+paths:
+  /metrics/daily-volume:
+    get:
+      summary: Returns total BTC bought and sold for the current Sao Paulo day
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daily volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyVolume'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+

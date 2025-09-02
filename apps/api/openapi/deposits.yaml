@@ -1,0 +1,93 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API - Deposits
+  version: 1.0.0
+  description: Endpoints for BRL deposits into user account.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    DepositRequest:
+      type: object
+      required: [amountBRL, clientRequestId]
+      properties:
+        amountBRL:
+          type: number
+          minimum: 0.01
+          description: BRL amount to deposit (2 decimal places, banker’s rounding).
+        clientRequestId:
+          type: string
+          minLength: 1
+          description: Idempotency key scoped to the authenticated user.
+    DepositResponse:
+      type: object
+      required: [id, amountBRL, newBalance, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        amountBRL:
+          type: number
+        newBalance:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+paths:
+  /deposits:
+    post:
+      summary: Create BRL deposit
+      description: Credits BRL to the authenticated user account with strong idempotency on clientRequestId.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+      responses:
+        '201':
+          description: Deposit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositResponse'
+        '200':
+          description: Idempotent hit - returning existing deposit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+

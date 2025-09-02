@@ -1,0 +1,135 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now()) @db.Timestamp(3)
+  account      Account?
+  transactions Transaction[]
+  positions    InvestmentPosition[]
+  orders       Order[]
+
+  @@map("users")
+}
+
+model Account {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @unique @db.Uuid
+  fiatBalanceBRL  Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt       DateTime @default(now()) @db.Timestamp(3)
+  updatedAt       DateTime @default(now()) @db.Timestamp(3)
+  user            User     @relation(fields: [userId], references: [id])
+  ledgerEntries   LedgerEntry[]
+
+  @@map("accounts")
+}
+
+enum TransactionType {
+  DEPOSIT
+  BUY
+  SELL
+  REBOOK
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+enum Currency {
+  BRL
+  BTC
+}
+
+model Transaction {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String          @db.Uuid
+  type             TransactionType
+  clientRequestId  String
+  amountBRL        Decimal?        @db.Decimal(18, 2)
+  qtyBTC           Decimal?        @db.Decimal(18, 8)
+  quotePriceBRL    Decimal?        @db.Decimal(18, 2)
+  createdAt        DateTime        @default(now()) @db.Timestamp(3)
+  ledgerEntries    LedgerEntry[]
+
+  user             User            @relation(fields: [userId], references: [id])
+
+  @@unique([userId, clientRequestId])
+  // Indexes to support statement queries (names mapped to match raw migrations)
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)], map: "transactions_user_created_id_desc_idx")
+  @@index([userId, type, createdAt(sort: Desc), id(sort: Desc)], map: "transactions_user_type_created_id_desc_idx")
+  // Index to support daily volume by type and day
+  @@index([type, createdAt(sort: Desc)], map: "transactions_type_created_idx")
+  @@map("transactions")
+}
+
+model LedgerEntry {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId     String          @db.Uuid
+  transactionId String          @db.Uuid
+  direction     LedgerDirection
+  currency      Currency
+  amount        Decimal         @db.Decimal(18, 8)
+  createdAt     DateTime        @default(now()) @db.Timestamp(3)
+
+  account       Account         @relation(fields: [accountId], references: [id])
+  transaction   Transaction     @relation(fields: [transactionId], references: [id])
+
+  @@map("ledger_entries")
+}
+
+model InvestmentPosition {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  qtyBTC         Decimal  @db.Decimal(18, 8)
+  unitPriceBRL   Decimal  @db.Decimal(18, 2)
+  openedAt       DateTime @default(now()) @db.Timestamp(3)
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@map("investment_positions")
+}
+
+enum OrderStatus {
+  ENQUEUED
+  PROCESSED
+}
+
+model Order {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String      @db.Uuid
+  type            TransactionType
+  amountBRL       Decimal     @db.Decimal(18, 2)
+  clientRequestId String
+  status          OrderStatus @default(ENQUEUED)
+  createdAt       DateTime    @default(now()) @db.Timestamp(3)
+
+  user            User        @relation(fields: [userId], references: [id])
+
+  @@unique([userId, clientRequestId])
+  @@map("orders")
+}
+
+model QuoteSnapshot {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ts        DateTime @unique @db.Timestamp(3)
+  buy       Decimal? @db.Decimal(18, 2)
+  sell      Decimal? @db.Decimal(18, 2)
+  source    String?
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  @@index([ts])
+  @@map("quote_snapshots")
+}

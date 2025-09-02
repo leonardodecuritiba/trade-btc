@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: BTC Trade API - Purchases
+  version: 1.0.0
+  description: Endpoint to accept buy orders and process asynchronously.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    BuyOrderRequest:
+      type: object
+      required: [amountBRL, clientRequestId]
+      properties:
+        amountBRL:
+          type: number
+          minimum: 0.01
+        clientRequestId:
+          type: string
+          minLength: 1
+    BuyOrderAccepted:
+      type: object
+      required: [orderId, status]
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ENQUEUED, PROCESSED]
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+paths:
+  /orders/buy:
+    post:
+      summary: Accept buy order (BRL amount)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuyOrderRequest'
+      responses:
+        '202':
+          description: Order enqueued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyOrderAccepted'
+        '200':
+          description: Idempotent accept (existing order)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyOrderAccepted'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid input or insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
